@@ -53,7 +53,10 @@ void init_d(unsigned int index, unsigned int SDA,
 // initialize the messages array
 void init_m(unsigned int index, unsigned int delay, unsigned int times);
 
-// init_Wire: setup wire interface, previous Wire interface must have end()
+// init_Wire: setup wire interface for each time it is used
+// previous Wire interface setup must be closed wire.end()
+// Only call init_Wire once each time to setup, 
+// even if there are >1 devices on the I2C interface
 void init_Wire(unsigned int index, TwoWire &Wire);
 
 // show temp 1
@@ -67,30 +70,30 @@ void status(unsigned int msg);
 
 void setup() {
     init_d(temp_1, 20, 21, 0x5A);   // IR temp sensor on Wire
-    init_d(AN_1, 18, 19, 0x70);     // Alphanumeric display 1 on Wire1
+    init_d(AN_2, 18, 19, 0x70);     // Alphanumeric display 1 on Wire1
     init_d(temp_2, 16, 17, 0x5A);   // IR temp sensor on Wire
-    init_d(AN_2, 14, 15, 0x70);     // Alphanumeric display 2 on Wire1
+    init_d(AN_1, 20, 21, 0x70);     // Alphanumeric display 2 on Wire
 
     init_m(start, 2, 1);    // 2 sec delay w2 slow blinks for boot start
     init_m(error, 2, 16);   // 2 sec delay w32 fast blinks for I2C error
     init_m(success, 2, 2);  // 2 sec delay w4 medium blinks for I2C success
-    init_m(next, 1, 1);     // 1 sec delay w1 slow blink for I2C next
+    init_m(next, 1, 4);     // 1 sec delay w1 slow blink for I2C next
 
     pinMode(LED_BUILTIN, OUTPUT);
     status(start);
 
     // init displays and show BOOT message
-    init_Wire(AN_1, Wire1);
+    init_Wire(AN_1, Wire);
     if (AN_display_1.begin(devices[AN_1].address,
                             DEFAULT_NOTHING_ATTACHED,
                             DEFAULT_NOTHING_ATTACHED,
                             DEFAULT_NOTHING_ATTACHED,
-                             Wire1) == false)
+                             Wire) == false)
     {
       status(error);
     }
     AN_display_1.print("BOOT");
-    Wire1.end();
+    Wire.end();
 
     init_Wire(AN_2, Wire1);
     if (AN_display_2.begin(devices[AN_2].address,
@@ -103,8 +106,6 @@ void setup() {
     }
     AN_display_2.print("BOOT");
     Wire1.end();
-
-    status(next);
 }
 
 void loop() 
@@ -154,13 +155,12 @@ void init_Wire(unsigned int index, TwoWire &Wire)
 
 void showTemp_1()
 {
-    init_Wire(AN_1, Wire1);
-    init_Wire(temp_1, Wire);
+    init_Wire(AN_1, Wire);
+    status(next);
     mlx_1.begin();
     float IR_temperature = mlx_1.readObjectTempF();
     displayAN(IR_temperature, AN_display_1);
     Wire.end();
-    Wire1.end();
 }
 
 void showTemp_2()
