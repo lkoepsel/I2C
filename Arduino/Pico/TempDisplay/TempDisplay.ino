@@ -1,26 +1,23 @@
-// I2C_Struct - Demo using a Wire Struct interface to simplify Wire on Pico
-// Uses Wire and 2 Wire1 interfaces
+// TempDisplay - Demo using a struct interface to simplify I2C on Pico
+// Uses 2 Wire and 2 Wire1 interfaces
 // Uses 2 temp sensors and 2 Sparkfun Alphanumeric displays
-// For Pico, and uses both Wire and Wire1 interfaces
-// Or change appropriately using the Wire commands below
-// Uses Arduino String class for text 
+// Temp and display could be combined to one Wire interface,
+// allowing up to 10 pairs of temp/displays (via multiplexing)
 
-#include <SPI.h>
 #include <Wire.h>
 #include <SparkFun_Alphanumeric_Display.h>
-//temp sensor
 #include <Adafruit_MLX90614.h>
 
 // 2 Temp Sensors
 Adafruit_MLX90614 mlx_1 = Adafruit_MLX90614();
 Adafruit_MLX90614 mlx_2 = Adafruit_MLX90614();
 
-//SparkFun Qwiic Alphanumeric Display - Green COM-18566
+// 2 SparkFun Qwiic Alphanumeric Displays - Green COM-18566
 // https://learn.sparkfun.com/tutorials/sparkfun-qwiic-alphanumeric-display-hookup-guide
 HT16K33 AN_display_1;
 HT16K33 AN_display_2;
 
-// Blinks LED for status messages
+// blink LED for status messages, blocking delay in seconds, 2n times for blinks
 #define max_messages 4
 enum message {start, error, success, next};
 struct blink
@@ -31,6 +28,7 @@ struct blink
 struct blink messages[max_messages];
 
 // define all I2C devices with a name
+// Use I2C_Scanner to confirm/get information on I2C devices
 #define max_I2C 4
 enum device {temp_1, temp_2, AN_1, AN_2};
 struct I2C_device 
@@ -47,7 +45,8 @@ String sNumber = "";                // string version of number for AN display
 // Alphanumeric display: right justify float values
 void displayAN(float value, HT16K33 AN);
 
-// initialize the device array
+// init device used to make setup of I2C interface easier
+// use same index for init_d and init_Wire
 void init_d(unsigned int index, unsigned int SDA,
              unsigned int SCL, byte address);
 
@@ -63,19 +62,19 @@ void showTemp_1();
 // show temp 2
 void showTemp_2();
 
-// status: delay for n seconds, blinking n/2 times per second
+// status: delay for n seconds, blinking 2n times per second
 void status(unsigned int msg);
 
 void setup() {
     init_d(temp_1, 20, 21, 0x5A);   // IR temp sensor on Wire
-    init_d(AN_1, 18, 19, 0x70); // Alphanumeric display 1 on Wire1
-    init_d(temp_2, 16, 17, 0x5A); // IR temp sensor on Wire
-    init_d(AN_2, 14, 15, 0x70); // Alphanumeric display 2 on Wire1
+    init_d(AN_1, 18, 19, 0x70);     // Alphanumeric display 1 on Wire1
+    init_d(temp_2, 16, 17, 0x5A);   // IR temp sensor on Wire
+    init_d(AN_2, 14, 15, 0x70);     // Alphanumeric display 2 on Wire1
 
-    init_m(start, 2, 1);    // 2 sec delay w2 slow blinks for boot success
+    init_m(start, 2, 1);    // 2 sec delay w2 slow blinks for boot start
     init_m(error, 2, 16);   // 2 sec delay w32 fast blinks for I2C error
     init_m(success, 2, 2);  // 2 sec delay w4 medium blinks for I2C success
-    init_m(next, 1, 1);     // 2 sec delay w4 medium blinks for I2C success
+    init_m(next, 1, 1);     // 1 sec delay w1 slow blink for I2C next
 
     pinMode(LED_BUILTIN, OUTPUT);
     status(start);
@@ -113,7 +112,7 @@ void loop()
     showTemp_1();
     delay(1000);
     showTemp_2();
-    delay(1000);
+    status(next);
 }
 
 // displayAN: right align number based on value, X 100 to remove decimal point

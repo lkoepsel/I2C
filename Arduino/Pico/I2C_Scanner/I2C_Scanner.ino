@@ -40,7 +40,7 @@ void scan_Wire(unsigned int SDA, unsigned int SCL, TwoWire &Wire);
 void setup() {
     Serial.begin(115200);
     while (!Serial) {delay(100);}
-    Serial.println("\nI2C One-Time Scan");
+    Serial.println("\nI2C Scan");
 
     scan_Wire(SDA_00, SCL_00, Wire);
     scan_Wire(SDA_10, SCL_10, Wire1);
@@ -111,7 +111,7 @@ void scan_Wire(unsigned int SDA, unsigned int SCL, TwoWire &Wire)
     }
     else
     {
-      Serial.println("Wire Scan Complete\n");
+      Serial.println("Scan Complete\n");
     }
     Wire.end();
     wireN++;
