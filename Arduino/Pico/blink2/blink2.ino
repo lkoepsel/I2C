@@ -13,7 +13,7 @@ struct blinker LED1;
 
 void setup ()
 {
-  LED0.ledPin = 3;
+  LED0.ledPin = LED_BUILTIN;
   LED0.state = LOW;
   LED0.interval = 1000;
   LED0.previousMillis = 0;
